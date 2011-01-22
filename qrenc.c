@@ -272,6 +272,41 @@ static void qrencode(const char *intext, const char *outfile)
 	QRcode_free(qrcode);
 }
 
+static void qrencodeStdIn( const char *outfile )
+{
+    unsigned char *buffer;
+	int ret;
+
+	buffer = (unsigned char *)malloc(MAX_DATA_SIZE);
+	if(buffer == NULL) {
+		fprintf(stderr, "Memory allocation failed.\n");
+		exit(EXIT_FAILURE);
+	}
+	ret = fread(buffer, 1, MAX_DATA_SIZE, stdin);
+	if(ret == 0) {
+		fprintf(stderr, "No input data.\n");
+        free( buffer );
+		exit(EXIT_FAILURE);
+	}
+	if(feof(stdin) == 0) {
+		fprintf(stderr, "Input data is too large.\n");
+        free( buffer );
+		exit(EXIT_FAILURE);
+	}
+
+	QRcode *qrcode;
+	
+	qrcode = QRcode_encodeBuffer8bit( buffer, ret, version, level );
+	if(qrcode == NULL) {
+		perror("Failed to encode the input data:");
+        free( buffer );
+		exit(EXIT_FAILURE);
+	}
+	writePNG(qrcode, outfile);
+	QRcode_free(qrcode);
+    free( buffer );
+}
+
 static QRcode_List *encodeStructured(const char *intext)
 {
 	QRcode_List *list;
@@ -436,7 +471,15 @@ int main(int argc, char **argv)
 		intext = argv[optind];
 	}
 	if(intext == NULL) {
-		intext = readStdin();
+        if(eightbit && !structured) {
+            //Special case binary codes
+            qrencodeStdIn(outfile);
+            return 0;
+        }
+        else
+        {
+		    intext = readStdin();
+        }
 	}
 
 	if(structured) {
