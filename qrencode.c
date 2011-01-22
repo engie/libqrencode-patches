@@ -421,11 +421,16 @@ QRcode *QRcode_encodeInput(QRinput *input)
 
 QRcode *QRcode_encodeString8bit(const char *string, int version, QRecLevel level)
 {
+    return QRcode_encodeBuffer8bit((unsigned char*) string, strlen(string), version, level);
+}
+
+QRcode *QRcode_encodeBuffer8bit(const unsigned char *buffer, int len, int version, QRecLevel level)
+{
 	QRinput *input;
 	QRcode *code;
 	int ret;
 
-	if(string == NULL) {
+	if(buffer == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -433,7 +438,7 @@ QRcode *QRcode_encodeString8bit(const char *string, int version, QRecLevel level
 	input = QRinput_new2(version, level);
 	if(input == NULL) return NULL;
 
-	ret = QRinput_append(input, QR_MODE_8, strlen(string), (unsigned char *)string);
+	ret = QRinput_append(input, QR_MODE_8, len, buffer);
 	if(ret < 0) {
 		QRinput_free(input);
 		return NULL;
